@@ -1,0 +1,184 @@
+##########################################################################################################################################################
+#Explication necessaire :
+#i) La variable URBAN est utilisée pour indiquer l’emplacement = 1 si l'installation est située en milieu urbain et 0 si non
+#ii) La variable MCERT indique si l'établissement est Medicare agréé
+#iii) Les variables PRO et TAXEXEMPT pour désigner respectivement les entreprises à but lucratif et les organisations exonérées d'impôt 
+#     si les soins des patients dans les maisons de retraites sont financés par des entreprises à buts lucratif ou des organismes exonérés d’impôts)
+#iv) la variable binaire SELFFUNDINS = 1 si la maison de retraite fournit des prestations
+#    d’assurance et de retraites à leurs employés"autofinancement de l'assurance". =0 si non
+#v) la variable TPY total patient years (TPY)= le nombre total de patients par années (TPY)
+#     LOGTPY=logarithme de TPY
+#########################################################################################################################################################
+
+
+
+library(readr)
+donnees_projet_econometriez <- read_csv("DUAS 1\\donnees_projet_econometriez.csv")
+View(donnees_projet_econometriez)
+dn<-donnees_projet_econometriez #renomme la base de donnée entiere en 'dn'
+##################################################################################
+#   analyse de variance unidirectionnelle en utilisant TAXEXEMPT comme facteur   #
+##################################################################################
+dnTAX0<-filter(dn,TAXEXEMPT == 0) #sous groupe de dn sous la contrainte TAXEXEMPT == 0
+dnTAX1<-filter(dn,TAXEXEMPT == 1) #sous groupe de dm sous la contrainte TAXEXEMPT == 1
+mean(log(dn$TPY)) # 4.368302 moyenne de LOGTPY
+mean(log(dnTAX0$TPY)) #4.362066 moyenne de LOGTPY du sous groupe TAXEXEMPT == 0
+mean(log(dnTAX1$TPY))  #4.378464 moyenne de LOGTPY du sous groupe TAXEXEMPT == 1
+
+dim(dnTAX0)[1] #220  le nombre de ligne de dnTAX0 = effectifs des patiens du sous groupe TAXEXEMPT == 0
+dim(dnTAX1)[1]  #135  le nombre de ligne de dnTAX1 = effectifs des patiens du sous groupe TAXEXEMPT == 1
+SB<-220*(4.362-4.368)^2+135*(4.378-4.368)^2 #la somme « entre les 2 sous groupes » des différences au carré 
+SB # 0.02142
+fb=2-1 #dregré de liberté de SB (un de moins que le nombre de sous groupe) k-1 avec k=2 car 2 sous groupes
+MSB=SB/fb #la valeur quadratique moyenne entre les groupes 
+SW<-220*var(log(dnTAX0$TPY))+135*var(log(dnTAX1$TPY)) # La somme des carrés au sein de chaque groupe 
+SW  #92.75793
+fw=220+135-2 #Le nombre de degrés de liberté de SW est le nombre total de valeurs de données n=355, moins le nombre de groupes k=2
+MSW<-SW/fw # la valeur quadratique moyenne à l'intérieur du groupe
+F=MSB/MSW # F est la statistique de test. L'hypothèse nulle, notée H0 pour le test F global pour cette expérience 
+          # serait que les deux niveaux du facteur TAXEXEMPT (le niveau TAXEXEMPT =1  et niveau TAXEXEMPT = 2) 
+          # produisent la même réponse, en moyenne.
+F        # F=0.08151605
+#La valeur critique est le nombre que la statistique de test doit dépasser pour rejeter le test. 
+#Dans ce cas, Fcrit(2,15) = 3,68 à α = 0,05. Puisque F = 0.08151605 < 3,68, on concerve H0
+#a variable TAXEXEMPT est non significatif au seuil de 5% 
+#donc  l'exonération fiscale est un facteur pas très important pour déterminer LOGTPY
+
+
+##################################################################################
+#    analyse de variance unidirectionnelle en utilisant MCERT comme facteur      #
+##################################################################################
+
+#### i)Exécution de l' analyse de variance à sens unique####
+
+dnMCERT0<-filter(dn,MCERT == 0) #sous groupe de dn sous la contrainte TAXEXEMPT == 0
+dnMCERT1<-filter(dn,MCERT == 1) #sous groupe de dn sous la contrainte TAXEXEMPT == 1
+mean(log(dn$TPY)) #4.368302 moyenne de LOGTPY
+mean(log(dnMCERT0$TPY)) #3.988054 moyenne de LOGTPY du sous groupe MCERT == 0
+mean(log(dnMCERT1$TPY)) #4.411214 moyenne de LOGTPY du sous groupe MCERT == 0
+
+dim(dnMCERT0)[1] #36 le nombre de ligne de dnMCERT0 = effectifs des patiens du sous groupe MCERT == 0 
+dim(dnMCERT1)[1]  #319 le nombre de ligne de dnMCERT1 = effectifs des patiens du sous groupe MCERT == 1  
+SB<-36*(3.988-4.368)^2+319*(4.411-4.368)^2 #la somme « entre les 2 sous groupes » des différences au carré 
+SB # 5.788231
+fb=2-1 #dregré de liberté de SB (un de moins que le nombre de sous groupe) k-1 avec k=2 car 2 sous groupes 
+MSB=SB/fb #la valeur quadratique moyenne entre les groupes 
+SW<-36*var(log(dnMCERT0$TPY))+319*var(log(dnMCERT1$TPY)) # La somme des carrés au sein de chaque groupe
+SW # 86.94694
+fw=319+36-2 #Le nombre de degrés de liberté de SW est le nombre total de valeurs de données n=355, moins le nombre de groupes k=2
+MSW<-SW/fw # la valeur quadratique moyenne à l'intérieur du groupe
+F=MSB/MSW # F est la statistique de test. L'hypothèse nulle, notée H0 pour le test F global pour cette expérience 
+# serait que les deux niveaux du facteur MCERT  (le niveau MCERT =1  et niveau MCERT = 2) 
+# produisent la même réponse, en moyenne.
+F        # F=23.49991
+#La valeur critique est le nombre que la statistique de test doit dépasser pour rejeter le test. 
+#Dans ce cas, Fcrit(2,15) = 3,68 à α = 0,05. Puisque F = 23.49991 > 3,68,On rejetterait l'hypothèse nulle. 
+#la variable MCERT est significatif au seuil de 5% 
+
+
+##### ii)Fournir une estimation ponctuelle de LOGTPY pour un établissement de soins infirmiers##
+#                           non certifié par l'assurance-maladie.
+LOGTPY_MCERT = mean(log(dnMCERT0$TPY)) # estimation de LOGPTY pour etablissement non certifié par l assurance maladie
+LOGTPY_MCERT  # 3.988054
+#### iii)Fournir un intervalle de confiance à 95 % pour votre estimation ponctuelle 
+#            (on a choisir faire une estimation via la loi de student)
+alpha=0.05; n=dim(dnMCERT0)[1]
+cq=qt(1-alpha/2,n-1) #quantile de la loi de student
+Binf=LOGTPY_MCERT-cq*(var(log(dnMCERT1$TPY))/sqrt(n)) #borne inferieure
+Bsup=LOGTPY_MCERT+cq*(var(log(dnMCERT1$TPY))/sqrt(n)) #borne superieure
+Binf;Bsup # 3.905122 ; 4.070986
+
+
+#######################################################################################
+#       Exécutez un modèle de régression à l'aide des variables binaires, URBAN,      #
+#                   PRO, TAXEXEMPT, SELFFUNDINS et MCERT.                             #
+#       Trouvez R2. Quelles sont les variables statistiquement significatif?          #
+#######################################################################################
+dim(dn)#355  12
+N=dim(dn)[1] #nombre total de ligne 
+logtpy<-log(dn$TPY) 
+y<-logtpy
+urban<-dn$URBAN #variable URBAN
+pro<-dn$PRO     #variable PRO
+taxexempt<-dn$TAXEXEMPT  #variable TAXEXEMPT
+selffundins<-dn$SELFFUNDINS   #variable SELFFUNDINS
+mcert<-dn$MCERT            #variable MCERT
+iota<-rep(1,N)
+X<-cbind(iota,urban,pro,taxexempt,selffundins,mcert)  # on concatene le vecteur iota aux multipples variables explicatives Xn pour obtenir la matrice X
+beta_chap = solve(t(X) %*% X) %*% t(X) %*% y #équation de beta chapeau du cours
+beta_chap   #iota         4.1079212
+       #urban        0.1927578
+       #pro         -0.3199897 pro est statistiquement significative
+       #taxexempt   -0.2025400
+       #selffundins  0.1444130
+       #mcert        0.3443967 mcert est statistiquement significative
+y_chap=beta_chap[1]*iota+beta_chap[2]*urban+beta_chap[3]*pro+beta_chap[4]*taxexempt+beta_chap[5]*selffundins+beta_chap[6]*mcert
+SCR<-sum((y - y_chap)^2)
+SCT<-N*var(y)
+R2<-1-SCR/SCT #Afin de mesurer la qualité d’ajustement du modèle, nous définissons le coefficient de
+              #détermination ou le coefficient de corrélation multiple R2. Ce paramètre indique la proportion
+              #expliquée de la variable endogène par les variables explicatives, sa valeur est comprise entre 0 et 1. 
+
+R2            # R2=0.1471805  sa valeur est proche de 0, cela indique un faible ajustement du modèle, 
+              #autrement dit, les variables explicatives n’expliquent pas bien la variable endogène.
+
+
+#########################################################################################################
+#  e. Exécutez un modèle de régression en utilisant toutes les variables explicatives, LOGNUMBED,       #
+#              LOGSQRFOOT, URBAN, PRO, TAXEXEMPT, SELFFUNDINS et MCERT.                                 #
+#              Trouvez R2. Quelles variables sont statistiquement significatives ?                      #
+#########################################################################################################
+
+dnajuste<-filter(dn,SQRFOOT!='NA') #on se rend compte qu'il y a 5 valeurs manquantes pour la variable SQRFOOT dans
+                                   #la base de données, du coup on a édité une nouvelle base de données en retirant
+                                   #les lignes correspondantes aux valeurs manquentes de SQRFOOT
+N1=dim(dnajuste)[1]
+N1  #350
+logtpy<-log(dnajuste$TPY)
+y<-logtpy
+urban<-dnajuste$URBAN
+pro<-dnajuste$PRO
+taxexempt<-dnajuste$TAXEXEMPT
+selffundins<-dnajuste$SELFFUNDINS
+mcert<-dnajuste$MCERT
+iota<-rep(1,N1)
+logsqrfoot<-log(dnajuste$SQRFOOT)
+lognumbed<-log(dnajuste$NUMBED)
+X<-cbind(iota,urban,pro,taxexempt,selffundins,mcert,logsqrfoot,lognumbed)
+beta2 = solve(t(X) %*% X) %*% t(X) %*% y
+beta2 #iota        -0.168229991
+      #urban       -0.015068464
+      #pro         -0.000383903
+      #taxexempt    0.018968378
+      #selffundins  0.003315320
+      #mcert       -0.006380297
+      #logsqrfoot   0.021069818 logsqrtfoot est statistiquement significative
+      #lognumbed    1.001288024 lognumbed est statistiquement significative
+y_chapeau=beta2[1]*iota+beta2[2]*urban+beta2[3]*pro+beta2[4]*taxexempt+beta2[5]*selffundins+beta2[6]*mcert+beta2[7]*logsqrfoot+beta2[8]*lognumbed
+SCR<-sum((y - y_chapeau)^2)
+SCT<-N*var(y)
+SCT
+R2<-1-SCR/SCT
+R2              # R2=0.9678114 la valeur de R2 est proche de 1, le modèle dispose d’une bonne qualité d’ajustement
+
+
+
+#################################################################################
+#       Calculer la corrélation partielle entre LOGTPY et LOGSQRFOOT.           #
+#          Comparez cela à la corrélation entre LOGTPY et LOGSQRFOOT.           #
+#          Expliquez pourquoi la corrélation partielle est faible.              #
+#################################################################################
+#notation: on note x=variable logsqrfoot, y=variable logtpy , z=varlognumbed.
+#rxyz=coefficient de correlation partielle entre x,y par rapport à z. 
+#le choix de z est dù à son haut dégré de significacité
+rxy<-cov(logsqrfoot,logtpy) 
+rxy  # rxy=0.2547743
+rxz<-cov(logsqrfoot,lognumbed)
+ryz<-cov(lognumbed,logtpy)
+rxyz<-(rxy - rxz*ryz)/sqrt((1-rxz*rxz)*(1-ryz*ryz)) 
+rxyz     #rxyz=0.2066751
+ #on a rxyz < rxy
+ #explication: La corrélation observée entre deux variables peut être sur-évaluée en raison d'une 
+ #ou plusieurs variables confondantes dans notre cas précis,il s'agit de la variable z=lognumber.
+ #Ainsi rxyz est le coefficient de corrélation partielle de x,y en retirant la variance 
+ #ou l'effet qui est due à la troisième variable Z qui est la variable lognumbed.
