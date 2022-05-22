@@ -1,12 +1,12 @@
 ##########################################################################################################################################################
 #Explication necessaire :
 #i) La variable URBAN est utilisée pour indiquer l’emplacement = 1 si l'installation est située en milieu urbain et 0 si non
-#ii) La variable MCERT indique si l'établissement est Medicare agréé
+#ii) La variable MCERT indique si l'établissement est Medicare agréé, 1 si c'est le cas et 0 si non
 #iii) Les variables PRO et TAXEXEMPT pour désigner respectivement les entreprises à but lucratif et les organisations exonérées d'impôt 
-#     si les soins des patients dans les maisons de retraites sont financés par des entreprises à buts lucratif ou des organismes exonérés d’impôts)
+#     (si les soins des patients dans les maisons de retraites sont financés par des entreprises à buts lucratif ou des organismes exonérés d’impôts)
 #iv) la variable binaire SELFFUNDINS = 1 si la maison de retraite fournit des prestations
-#    d’assurance et de retraites à leurs employés"autofinancement de l'assurance". =0 si non
-#v) la variable TPY total patient years (TPY)= le nombre total de patients par années (TPY)
+#    d’assurance et de retraites à leurs employés :"autofinancement de l'assurance". et égale à 0 si non
+#v) la variable TPY total patient years (TPY)= le nombre total de patients par années (TPY): on s'interessera juste à l'année 2001
 #     LOGTPY=logarithme de TPY
 #########################################################################################################################################################
 
@@ -16,9 +16,16 @@ library(readr)
 donnees_projet_econometriez <- read_csv("DUAS 1\\donnees_projet_econometriez.csv")
 View(donnees_projet_econometriez)
 dn<-donnees_projet_econometriez #renomme la base de donnée entiere en 'dn'
-##################################################################################
-#   analyse de variance unidirectionnelle en utilisant TAXEXEMPT comme facteur   #
-##################################################################################
+
+################################################################################################## 
+# a. Il existe trois niveaux de structures organisationnelles, mais nous n'en utilisons que deux:# 
+#     les variables binaires (PRO et TAXEXEMPT) pour réduire la complexité de l'étude            #
+##################################################################################################
+
+######################################################################################
+#   b.  analyse de variance unidirectionnelle en utilisant TAXEXEMPT comme facteur   #
+######################################################################################
+
 dnTAX0<-filter(dn,TAXEXEMPT == 0) #sous groupe de dn sous la contrainte TAXEXEMPT == 0
 dnTAX1<-filter(dn,TAXEXEMPT == 1) #sous groupe de dm sous la contrainte TAXEXEMPT == 1
 mean(log(dn$TPY)) # 4.368302 moyenne de LOGTPY
@@ -33,12 +40,12 @@ fb=2-1 #dregré de liberté de SB (un de moins que le nombre de sous groupe) k-1
 MSB=SB/fb #la valeur quadratique moyenne entre les groupes 
 SW<-220*var(log(dnTAX0$TPY))+135*var(log(dnTAX1$TPY)) # La somme des carrés au sein de chaque groupe 
 SW  #92.75793
-fw=220+135-2 #Le nombre de degrés de liberté de SW est le nombre total de valeurs de données n=355, moins le nombre de groupes k=2
+fw=220+135-2 #Le nombre de degrés de liberté de SW est égale au nombre total de valeurs de données n=355 moins le nombre de groupes k=2
 MSW<-SW/fw # la valeur quadratique moyenne à l'intérieur du groupe
 F=MSB/MSW # F est la statistique de test. L'hypothèse nulle, notée H0 pour le test F global pour cette expérience 
           # serait que les deux niveaux du facteur TAXEXEMPT (le niveau TAXEXEMPT =1  et niveau TAXEXEMPT = 2) 
           # produisent la même réponse, en moyenne.
-F        # F=0.08151605
+F         # F=0.08151605
 #La valeur critique est le nombre que la statistique de test doit dépasser pour rejeter le test. 
 #Dans ce cas, Fcrit(2,15) = 3,68 à α = 0,05. Puisque F = 0.08151605 < 3,68, on concerve H0
 #a variable TAXEXEMPT est non significatif au seuil de 5% 
@@ -46,7 +53,7 @@ F        # F=0.08151605
 
 
 ##################################################################################
-#    analyse de variance unidirectionnelle en utilisant MCERT comme facteur      #
+#   c. analyse de variance unidirectionnelle en utilisant MCERT comme facteur    #
 ##################################################################################
 
 #### i)Exécution de l' analyse de variance à sens unique####
@@ -90,7 +97,7 @@ Binf;Bsup # 3.905122 ; 4.070986
 
 
 #######################################################################################
-#       Exécutez un modèle de régression à l'aide des variables binaires, URBAN,      #
+#    d. Exécutez un modèle de régression à l'aide des variables binaires, URBAN,      #
 #                   PRO, TAXEXEMPT, SELFFUNDINS et MCERT.                             #
 #       Trouvez R2. Quelles sont les variables statistiquement significatif?          #
 #######################################################################################
@@ -132,7 +139,7 @@ R2            # R2=0.1471805  sa valeur est proche de 0, cela indique un faible 
 dnajuste<-filter(dn,SQRFOOT!='NA') #on se rend compte qu'il y a 5 valeurs manquantes pour la variable SQRFOOT dans
                                    #la base de données, du coup on a édité une nouvelle base de données en retirant
                                    #les lignes correspondantes aux valeurs manquentes de SQRFOOT
-N1=dim(dnajuste)[1]
+N1=dim(dnajuste)[1]           #nombre total de ligne  du tableau ajusté
 N1  #350
 logtpy<-log(dnajuste$TPY)
 y<-logtpy
@@ -156,6 +163,7 @@ beta2 #iota        -0.168229991
       #lognumbed    1.001288024 lognumbed est statistiquement significative
 y_chapeau=beta2[1]*iota+beta2[2]*urban+beta2[3]*pro+beta2[4]*taxexempt+beta2[5]*selffundins+beta2[6]*mcert+beta2[7]*logsqrfoot+beta2[8]*lognumbed
 SCR<-sum((y - y_chapeau)^2)
+SCR
 SCT<-N*var(y)
 SCT
 R2<-1-SCR/SCT
@@ -164,7 +172,7 @@ R2              # R2=0.9678114 la valeur de R2 est proche de 1, le modèle dispo
 
 
 #################################################################################
-#       Calculer la corrélation partielle entre LOGTPY et LOGSQRFOOT.           #
+# e(i). Calculer la corrélation partielle entre LOGTPY et LOGSQRFOOT.           #
 #          Comparez cela à la corrélation entre LOGTPY et LOGSQRFOOT.           #
 #          Expliquez pourquoi la corrélation partielle est faible.              #
 #################################################################################
@@ -182,3 +190,48 @@ rxyz     #rxyz=0.2066751
  #ou plusieurs variables confondantes dans notre cas précis,il s'agit de la variable z=lognumber.
  #Ainsi rxyz est le coefficient de corrélation partielle de x,y en retirant la variance 
  #ou l'effet qui est due à la troisième variable Z qui est la variable lognumbed.
+
+
+##################################################################################
+# e(ii).Comparer le faible niveau des t-ratios (pour tester l'importance de      #
+#    coefficients de régression individuels) et le niveau élevé du F-ratio       #
+#    (pour tester l'adéquation du modèle). Décrivez l'incohérence apparente,     #
+#         b et fournir une explication à cette incohérence  .                    #                                                        
+##################################################################################
+###### Il convient de calculer les ratios de Student et de les comparer à la valeur lue
+#dans la table de Student pour un seuil de 5 % 
+#les ratios etant egale au rapport des estimations des coefficients de regression sur leurs variances respectives
+#on travaillera avec le modele de regression utilisant toutes les variables explicatives
+N1=dim(dnajuste)[1] #nombre d'observations
+K=7 #nombre de variable explicative
+e<-SCR/(N1-K-1) #L’estimation sans biais de la variance résiduelle nous permet d'obtenir 
+                #la matrice des variances covariances des coefficients de régression Ωa 
+e
+Omega<-e*solve(t(X) %*% X) #La matrice des variances covariances des coefficients de régression Ω
+diag(Omega)#Les variances des coefficients de régression se trouvent à la première diagonale de la matrice
+ratio_S<-abs(beta2/diag(Omega)) #ratios de student obtenus
+ratio_S        #iota          61.706929 
+             #urban        139.015142 > t0,05 = 2,228 → la variable explicative urban est contributive à l’explication de y
+             #pro           1.210009  < t0,05 = 2,228 → la variable explicative PRO n'est pas contributive à l’explication de y              
+             #taxexempt     61.033386 > t0,05 = 2,228 → la variable explicative taxexempt est contributive à l’explication de y
+             #selffundins   29.666432 > t0,05 = 2,228 → la variable explicative selffundins est contributive à l’explication de y
+             #mcert         19.498993 > t0,05 = 2,228 → la variable explicative mcert est contributive à l’explication de y
+             #logsqrfoot    90.401805 > t0,05 = 2,228 → la variable explicative logsqrfoot est contributive à l’explication de y
+             #lognumbed   2940.411720 > t0,05 = 2,228 → la variable explicative lognumber est contributive à l’explication de y
+
+###le niveau élevé du F-ratio (pour tester l'adéquation du modèle).
+ratio_F<-(R2/K)/(1-R2)/(n-K-1)
+ratio_F   #0.1534025 < F(0,05 3,10) = 3,71 Nous acceptons donc l’hypothèse H0 de nullité de tous les coefficients, 
+          #la régression n'est donc pas globalement significative ce qui parait incohérant car les ratio de student
+          #nous montre qu'excepté la variable PRO, toutes les autres variables sont contributives à l'explication de y=LOGTPY
+
+
+
+
+
+
+
+
+
+
+
